@@ -1,0 +1,23 @@
+MINDSYNC UPGRADE TEST REPORT
+Date: 2026-10-28
+
+CHANGES IMPLEMENTED
+1. People dashboard trend chart: recent self-reported stress and sleep values.
+2. Researcher correlation analysis: Pearson correlations for stress/sleep, stress/heart rate, and sleep/heart rate. Only consented records are queried; sample count is displayed and results are described as exploratory.
+3. Admin security/activity audit log: latest tracked events are shown on Admin dashboard.
+4. Audit events instrumented for login success/failure, logout, health-record creation, research-consent change, EEG dataset analysis, role changes, account deletion and researcher dashboard access.
+5. Existing role routes and dashboards retained.
+
+CHECKS COMPLETED IN THIS ENVIRONMENT
+- Python app.py syntax compilation: PASS (python -m py_compile).
+- ZIP integrity check: performed after packaging.
+- Source-level checks for new dashboard bindings and routes: reviewed.
+
+NOT COMPLETED
+- Full Flask HTTP/browser end-to-end tests could not be run in this environment because Flask/Pandas/NumPy/ReportLab are not installed here and package installation is blocked by unavailable network/DNS.
+- Therefore, People/Researcher/Admin live login, database migrations, charts rendering, PDF generation and uploads must still be verified on the user's Windows machine after installing requirements.
+
+IMPORTANT LIMITATIONS
+- Correlation is not causation and may be unreliable for small samples.
+- EEG state labels remain demo rule-based summaries, not validated mood prediction or diagnosis.
+- The app is a local academic prototype; do not use real sensitive health data for demonstrations.

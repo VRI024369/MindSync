@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="theme-color" content="#101a36"><title>{% block title %}MindSync | Cognitive Wellness & EEG Research{% endblock %}</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head>
+<body class="{% if session.get('role') == 'researcher' %}researcher-app{% elif session.get('role') in ['user', 'admin'] %}workspace-app{% endif %}">
+{% if session.get('role') == 'researcher' %}
+<aside class="research-sidebar">
+  <a class="sidebar-brand" href="{{ url_for('researcher') }}"><span class="sidebar-logo">M</span><span>MindSync<small>RESEARCH ANALYTICS</small></span></a>
+  <div class="sidebar-user"><div class="sidebar-avatar">{{ (session.get('username') or 'R')[0]|upper }}</div><div><strong>{{ session.get('username') }}</strong><small>Researcher</small></div></div>
+  <div class="sidebar-label">RESEARCH MENU</div>
+  <a class="sidebar-link active" href="{{ url_for('researcher') }}"><span>▦</span> Dashboard</a>
+  <a class="sidebar-link" href="{{ url_for('researcher') }}#researcher-profile"><span>♙</span> Researcher Profile</a>
+  <a class="sidebar-link" href="{{ url_for('researcher') }}#participant-records"><span>▤</span> Participant Data</a>
+  <a class="sidebar-link" href="{{ url_for('researcher') }}#research-analytics"><span>⌁</span> Analytics &amp; Graphs</a>
+  <a class="sidebar-link" href="{{ url_for('researcher') }}#eeg-summaries"><span>◈</span> EEG Summaries</a>
+  <a class="sidebar-link" href="{{ url_for('researcher_export') }}"><span>⇩</span> Export Health Data</a>
+  <a class="sidebar-link" href="{{ url_for('researcher_export_eeg') }}"><span>⇩</span> Export EEG Data</a>
+  <div class="sidebar-help"><span class="help-mark">?</span><div><strong>Research responsibly</strong><small>Use consented data only.</small></div></div><div class="sidebar-bottom"><a class="sidebar-link" href="{{ url_for('logout') }}"><span>↪</span> Sign out</a></div>
+</aside>
+{% elif session.get('role') in ['user','admin'] %}
+<aside class="research-sidebar workspace-sidebar">
+  <a class="sidebar-brand" href="{{ url_for('dashboard') if session.get('role') == 'user' else url_for('admin') }}"><span class="sidebar-logo">M</span><span>MindSync<small>{% if session.get('role') == 'admin' %}SYSTEM CONTROL{% else %}PERSONAL WELLNESS{% endif %}</small></span></a>
+  <div class="sidebar-user"><div class="sidebar-avatar">{{ (session.get('username') or 'M')[0]|upper }}</div><div><strong>{{ session.get('username') }}</strong><small>{{ 'Administrator' if session.get('role') == 'admin' else 'People account' }}</small></div></div>
+  <div class="sidebar-label">{% if session.get('role') == 'admin' %}ADMIN MENU{% else %}MY WORKSPACE{% endif %}</div>
+  {% if session.get('role') == 'user' %}
+  <a class="sidebar-link" href="{{ url_for('dashboard') }}"><span>▦</span> Overview</a><a class="sidebar-link" href="{{ url_for('person_details') }}"><span>♥</span> Enter health readings</a><a class="sidebar-link" href="{{ url_for('person_report') }}"><span>▤</span> My reports</a><a class="sidebar-link" href="{{ url_for('mood_checkin') }}"><span>♡</span> Mood check-in</a><a class="sidebar-link" href="{{ url_for('history') }}"><span>〰</span> EEG history</a><a class="sidebar-link" href="{{ url_for('profile') }}"><span>♙</span> Profile & privacy</a>
+  {% else %}
+  <a class="sidebar-link" href="{{ url_for('admin') }}"><span>▦</span> Overview</a><a class="sidebar-link" href="{{ url_for('admin') }}#accounts"><span>♙</span> Account management</a><a class="sidebar-link" href="{{ url_for('admin') }}#health-records"><span>♥</span> Health records</a><a class="sidebar-link" href="{{ url_for('admin') }}#eeg-dataset"><span>〰</span> EEG dataset</a><a class="sidebar-link" href="{{ url_for('admin') }}#email-alerts"><span>✉</span> Email alerts</a>
+  {% endif %}
+  <div class="sidebar-help"><span class="help-mark">?</span><div><strong>{% if session.get('role') == 'admin' %}Privacy first{% else %}Your wellbeing matters{% endif %}</strong><small>{% if session.get('role') == 'admin' %}Authorized access only.{% else %}Your data is personal.{% endif %}</small></div></div><div class="sidebar-bottom"><a class="sidebar-link" href="{{ url_for('logout') }}"><span>↪</span> Sign out</a></div>
+</aside>
+{% else %}
+<header class="topbar"><a class="brand" href="{{ url_for('home') }}"><span class="brand-mark">M</span><span>Mind<span class="brand-accent">Sync</span><small>MOOD &amp; EEG INSIGHTS</small></span></a>
+{% if session.get('username') %}<nav><a href="{{ url_for('dashboard') }}">Workspace</a>{% if session.get('role') == 'user' %}<a href="{{ url_for('person_details') }}">Health readings</a><a href="{{ url_for('person_report') }}">My reports</a><a href="{{ url_for('mood_checkin') }}">Mood check-in</a><a href="{{ url_for('history') }}">EEG history</a><a href="{{ url_for('profile') }}">Profile</a>{% elif session.get('role') == 'admin' %}<a href="{{ url_for('admin') }}">Admin</a>{% endif %}<span class="nav-user">{{ session.get('username') }} · {{ session.get('role')|title }}</span><a href="{{ url_for('logout') }}" class="logout">Logout ↗</a></nav>{% else %}<nav><a href="{{ url_for('login') }}">Sign in</a><a href="{{ url_for('register') }}">Create account</a></nav>{% endif %}</header>
+{% endif %}
+<main class="{% if session.get('role') == 'researcher' %}research-main{% elif session.get('role') in ['user', 'admin'] %}research-main workspace-main{% else %}container{% endif %}">{% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="alert {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}{% block content %}{% endblock %}</main>
+<footer class="{% if session.get('role') == 'researcher' %}research-footer{% elif session.get('role') in ['user', 'admin'] %}research-footer workspace-footer{% endif %}"><span>MindSync</span> · Academic prototype · Mood estimates are not diagnoses · EEG outputs require validated models</footer></body></html>

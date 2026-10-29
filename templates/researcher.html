@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Research Workspace | MindSync{% endblock %}
+{% block content %}
+<div class="research-welcome-row">
+  <div class="research-welcome-copy"><div class="tag"><span class="live-dot"></span> RESEARCH WORKSPACE / OVERVIEW</div><h1>Research dashboard</h1>
+  <p>Monitor consented participant submissions, explore mood and stress patterns, and export research-ready summaries.</p>
+  <div class="research-welcome-meta"><span>◈ Privacy-aware workspace</span><span>▦ Live database summary</span></div></div>
+  <div class="research-actions"><a class="btn" href="{{ url_for('researcher_export') }}">⇩ Export health data</a><a class="btn secondary" href="{{ url_for('researcher_export_eeg') }}">⇩ Export EEG data</a></div>
+</div>
+
+<div class="research-notice"><span class="notice-icon">i</span><div><strong>Privacy-first research data</strong><p>Only People accounts that enabled research consent are included. If this workspace is empty, ask participants to enable consent in Profile &amp; Privacy and submit a health reading or EEG analysis.</p></div></div>
+
+<div class="metric-grid four researcher-metrics">
+  <div class="metric-card"><span>CONSENTED PARTICIPANTS</span><strong>{{ consented_people }}</strong><small>People who opted in</small></div>
+  <div class="metric-card"><span>HEALTH RECORDS</span><strong>{{ total }}</strong><small>Consented submissions</small></div>
+  <div class="metric-card"><span>EEG ANALYSES</span><strong>{{ analyses }}</strong><small>Consented analysis summaries</small></div>
+  <div class="metric-card"><span>AVG. STRESS</span><strong>{% if avg_stress is not none %}{{ avg_stress }}/10{% else %}—{% endif %}</strong><small>Across available readings</small></div>
+</div>
+
+<div class="research-summary-grid">
+  <div class="research-summary-card"><span>AVERAGE SLEEP</span><strong>{% if avg_sleep is not none %}{{ avg_sleep }} h{% else %}—{% endif %}</strong></div>
+  <div class="research-summary-card"><span>AVERAGE HEART RATE</span><strong>{% if avg_hr is not none %}{{ avg_hr }} bpm{% else %}—{% endif %}</strong></div>
+  <div class="research-summary-card"><span>AVERAGE SYSTOLIC BP</span><strong>{% if avg_systolic is not none %}{{ avg_systolic }} mmHg{% else %}—{% endif %}</strong></div>
+  <div class="research-summary-card"><span>AVERAGE BLOOD SUGAR</span><strong>{% if avg_sugar is not none %}{{ avg_sugar }} mg/dL{% else %}—{% endif %}</strong></div>
+</div>
+
+<div id="researcher-profile" class="upload-card researcher-profile-card">
+  <h2>Researcher profile</h2><p>Keep your study identity and research area up to date.</p>
+  <form method="POST" class="form-grid">
+    <div><label for="full_name">Full name *</label><input id="full_name" name="full_name" value="{{ profile['full_name'] if profile else '' }}" required maxlength="100"></div>
+    <div><label for="institution">Institution / organization</label><input id="institution" name="institution" value="{{ profile['institution'] if profile else '' }}" maxlength="160"></div>
+    <div><label for="department">Department</label><input id="department" name="department" value="{{ profile['department'] if profile else '' }}" maxlength="120"></div>
+    <div><label for="research_area">Research area</label><input id="research_area" name="research_area" value="{{ profile['research_area'] if profile else '' }}" maxlength="200"></div>
+    <div><label for="email">Contact email</label><input id="email" name="email" type="email" value="{{ profile['email'] if profile else '' }}" maxlength="160"></div>
+    <div class="form-submit"><button class="btn" type="submit">Save profile</button></div>
+  </form>
+</div>
+
+<div id="research-analytics" class="section-title"><h2>Research analytics</h2><span class="subtle-text">Based on consented health records</span></div>
+<div class="research-chart-grid">
+  <section class="chart-card"><div class="chart-head"><div><span class="chart-kicker">TREND ANALYSIS</span><h2>Stress level trend</h2><p>Average reported stress by date · scale 1–10</p></div><span class="chart-icon blue-icon">⌁</span></div>{% if total %}<div class="research-chart"><canvas id="stressChart"></canvas></div>{% else %}<div class="chart-empty-state"><div class="empty-chart-icon">⌁</div><strong>Waiting for participant readings</strong><p>Stress trends will appear here after consented health readings are submitted.</p></div>{% endif %}</section>
+  <section class="chart-card"><div class="chart-head"><div><span class="chart-kicker">MOOD INSIGHTS</span><h2>Mood distribution</h2><p>Breakdown of self-reported mood entries</p></div><span class="chart-icon violet-icon">◉</span></div>{% if total %}<div class="research-chart"><canvas id="moodChart"></canvas></div>{% else %}<div class="chart-empty-state"><div class="empty-chart-icon">◉</div><strong>No mood data to display yet</strong><p>This chart will summarize mood entries from people who consented to research use.</p></div>{% endif %}</section>
+</div>
+
+<div id="participant-records" class="section-title"><h2>Participant health records</h2><span class="subtle-text">Showing up to 5,000 latest consented records</span></div>
+<div class="upload-card researcher-filter-card"><form method="GET" action="{{ url_for('researcher') }}" class="research-filter-form">
+  <div><label for="mood">Filter by mood</label><select id="mood" name="mood"><option value="">All moods</option>{% for m in moods %}<option value="{{ m }}" {% if selected_mood == m %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></div>
+  <div><label for="min_stress">Minimum stress</label><select id="min_stress" name="min_stress"><option value="">Any</option>{% for n in range(1,11) %}<option value="{{ n }}" {% if min_stress == n|string %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>
+  <div><label for="max_stress">Maximum stress</label><select id="max_stress" name="max_stress"><option value="">Any</option>{% for n in range(1,11) %}<option value="{{ n }}" {% if max_stress == n|string %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></div>
+  <div class="filter-buttons"><button class="btn" type="submit">Apply filters</button><a class="btn secondary" href="{{ url_for('researcher') }}">Clear</a></div>
+</form><p class="filter-count">{{ rows|length }} record(s) match the current filters.</p></div>
+<div class="table-wrap"><table><thead><tr><th>Participant ID</th><th>Date</th><th>Stress</th><th>Mood</th><th>Sleep (h)</th><th>Heart rate</th><th>BP (mmHg)</th><th>Temp °C</th><th>Sugar mg/dL</th></tr></thead><tbody>
+{% for r in rows %}<tr><td>{{ r['participant'] }}</td><td>{{ r['record_time'] }}</td><td><span class="stress-chip {% if r['stress_level'] >= 8 %}stress-high{% elif r['stress_level'] >= 5 %}stress-mid{% endif %}">{{ r['stress_level'] }}/10</span></td><td>{{ r['mood'] }}</td><td>{{ r['sleep_hours'] }}</td><td>{{ r['heart_rate'] }}</td><td>{{ r['systolic_bp'] }}/{{ r['diastolic_bp'] }}</td><td>{{ r['temperature'] }}</td><td>{{ r['blood_sugar'] }}</td></tr>
+{% else %}<tr><td colspan="9" class="empty">{% if total == 0 %}No consented health records are available. Ask participants to enable research consent in Profile &amp; Privacy, then save a health reading.{% else %}No records match these filters. Clear the filters to view all consented records.{% endif %}</td></tr>{% endfor %}
+</tbody></table></div>
+
+<div id="eeg-summaries" class="section-title"><h2>EEG analysis summaries</h2><span class="subtle-text">Demo signal statistics, not clinical interpretations</span></div>
+<div class="table-wrap"><table><thead><tr><th>Participant ID</th><th>Analysis date</th><th>Source file</th><th>Demo state</th><th>Demo score</th><th>Samples</th><th>Mean</th><th>Std. dev.</th><th>Signal energy</th></tr></thead><tbody>
+{% for a in analysis_rows %}<tr><td>{{ a['participant'] }}</td><td>{{ a['analysis_time'] }}</td><td>{{ a['filename'] }}</td><td>{{ a['state'] }}</td><td>{{ '%.1f'|format(a['confidence']*100) }}%</td><td>{{ a['sample_count'] }}</td><td>{{ '%.3f'|format(a['mean_value']) }}</td><td>{{ '%.3f'|format(a['std_value']) }}</td><td>{{ '%.3f'|format(a['energy']) }}</td></tr>
+{% else %}<tr><td colspan="9" class="empty">No consented EEG analysis summaries are available yet.</td></tr>{% endfor %}
+</tbody></table></div>
+
+<div class="section-title"><h2>Exploratory correlation analysis</h2><span class="subtle-text">Only consented records · descriptive, not causal</span></div>
+<div class="table-wrap"><table><thead><tr><th>Variables compared</th><th>Pearson correlation (r)</th><th>Records included</th></tr></thead><tbody>{% for c in correlation_rows %}<tr><td>{{ c.label }}</td><td>{% if c.value is not none %}{{ '%.3f'|format(c.value) }}{% else %}Not enough variation/data{% endif %}</td><td>{{ c.n }}</td></tr>{% endfor %}</tbody></table></div>
+<p class="subtle-text">Correlation values range from -1 to +1. They describe linear association in the available sample and do not show that one factor causes another. Results can be unstable with small samples.</p>
+<div class="info-card"><h3>Privacy and research limitations</h3><p>Only people who opt in are included. The dashboard uses participant labels instead of account names, but pseudonyms are not guaranteed anonymity. Follow your institution's ethics requirements. The EEG state and score are demonstration outputs and must not be treated as a validated brain-state or medical diagnosis.</p></div>
+<script>
+const stressLabels = {{ stress_labels|safe }};
+const stressValues = {{ stress_values|safe }};
+const moodLabels = {{ mood_labels|safe }};
+const moodValues = {{ mood_values|safe }};
+if (window.Chart && document.getElementById('stressChart') && document.getElementById('moodChart')) {
+  new Chart(document.getElementById('stressChart'), {type:'line',data:{labels:stressLabels,datasets:[{label:'Average reported stress',data:stressValues,borderColor:'#3478d4',backgroundColor:'rgba(52,120,212,.13)',fill:true,tension:.25,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:1,max:10,ticks:{stepSize:1}}}}});
+  new Chart(document.getElementById('moodChart'), {type:'doughnut',data:{labels:moodLabels,datasets:[{label:'Mood entries',data:moodValues,backgroundColor:['#3478d4','#28a58c','#f1a53c','#a17be8','#e46d83','#7a8ca5']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+}
+</script>
+{% endblock %}

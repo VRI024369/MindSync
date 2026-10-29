@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}My wellness dashboard | MindSync{% endblock %}
+{% block content %}
+<section class="research-welcome-row people-welcome">
+  <div class="research-welcome-copy">
+    <div class="tag"><span class="live-dot"></span> YOUR PRIVATE WELLNESS SPACE</div>
+    <h1>Hello, {{ display_name }} <span aria-hidden="true">✦</span></h1>
+    <p>A calm place to record how you feel, organize health readings and keep your personal reports together.</p>
+    <div class="research-welcome-meta"><span>◷ Personal timeline</span><span>◆ Privacy settings are in your control</span></div>
+  </div>
+  <div class="research-actions"><a class="btn" href="{{ url_for('person_details') }}">＋ Add health readings</a> <a class="btn secondary" href="{{ url_for('profile') }}">Profile &amp; privacy</a></div>
+</section>
+<div class="research-notice"><span class="notice-icon">i</span><div><strong>A gentle reminder</strong><p>MindSync organizes information you enter; it does not diagnose medical conditions. If you have severe symptoms or are worried about a reading, contact a qualified healthcare professional.</p></div></div>
+<div class="metric-grid four researcher-metrics people-metrics">
+  <div class="metric-card"><span>HEALTH RECORDS</span><strong>{{ vital_total }}</strong><small>Your saved wellness readings</small></div>
+  <div class="metric-card"><span>MOOD CHECK-INS</span><strong>{{ mood_total }}</strong><small>Your personal reflections</small></div>
+  <div class="metric-card"><span>EEG ANALYSES</span><strong>{{ total }}</strong><small>CSV signal summaries</small></div>
+  <div class="metric-card"><span>RECENT ACTIVITY</span><strong>{{ latest_vitals|length + moods|length + latest|length }}</strong><small>Items shown below</small></div>
+</div>
+<div class="section-title"><h2>Your wellness tools</h2><span class="subtle-text">Pick a place to start</span></div>
+<div class="feature-grid people-feature-grid">
+  <a class="feature-card blue" href="{{ url_for('person_details') }}"><div class="feature-icon">♥</div><span class="feature-number">01</span><h3>Record health readings</h3><p>Save stress, mood, sleep, heart rate, blood pressure, temperature and blood sugar.</p><b>Add a reading →</b></a>
+  <a class="feature-card green" href="{{ url_for('person_report') }}"><div class="feature-icon">▤</div><span class="feature-number">02</span><h3>Reports &amp; documents</h3><p>Download a PDF report for a saved reading or upload an existing report file.</p><b>Open my reports →</b></a>
+  <a class="feature-card violet" href="{{ url_for('mood_checkin') }}"><div class="feature-icon">♡</div><span class="feature-number">03</span><h3>Mood check-in</h3><p>Write a short reflection, review the suggested mood and edit it when needed.</p><b>Check in →</b></a>
+  <a class="feature-card orange" href="{{ url_for('mood_checkin') }}#support"><div class="feature-icon">✧</div><span class="feature-number">04</span><h3>Personal support</h3><p>Find simple breathing, journaling and self-care ideas based on your check-in.</p><b>Explore support →</b></a>
+  <a class="feature-card sky" href="{{ url_for('profile') }}"><div class="feature-icon">♙</div><span class="feature-number">05</span><h3>Profile &amp; data privacy</h3><p>Update your details, change your password and choose whether to share records for research.</p><b>Manage privacy →</b></a>
+  <a class="feature-card blue" href="{{ url_for('history') }}"><div class="feature-icon">〰</div><span class="feature-number">06</span><h3>EEG analysis history</h3><p>Review summaries from numeric CSV signal files you have analyzed.</p><b>View history →</b></a>
+</div>
+<div class="section-title"><h2>Your wellness trend</h2><span class="subtle-text">Based on your latest saved readings</span></div>
+<section class="chart-card"><div class="chart-head"><div><span class="chart-kicker">PERSONAL PROGRESS</span><h2>Stress and sleep over time</h2><p>Descriptive trends only; not a medical assessment.</p></div><span class="chart-icon blue-icon">⌁</span></div>{% if vital_total %}<div class="research-chart"><canvas id="personalTrendChart"></canvas></div>{% else %}<div class="chart-empty-state"><strong>Your trend will appear here</strong><p>Save at least one health reading to start your personal timeline.</p></div>{% endif %}</section>
+<script>
+const personalLabels={{ chart_labels|safe }}; const personalStress={{ chart_stress|safe }}; const personalSleep={{ chart_sleep|safe }};
+if(window.Chart && document.getElementById('personalTrendChart')) new Chart(document.getElementById('personalTrendChart'),{type:'line',data:{labels:personalLabels,datasets:[{label:'Stress (1–10)',data:personalStress,yAxisID:'y',borderColor:'#3478d4',tension:.25},{label:'Sleep (hours)',data:personalSleep,yAxisID:'y1',borderColor:'#28a58c',tension:.25}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:1,max:10,position:'left',title:{display:true,text:'Stress level'}},y1:{min:0,max:24,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'Sleep hours'}}}}});
+</script>
+<div class="section-title"><h2>Recent health readings</h2><a href="{{ url_for('person_report') }}">View all reports →</a></div>
+<div class="recent-list">
+{% for v in latest_vitals %}<div class="recent-item"><div><b>{{ v['record_time'] }} · Stress {{ v['stress_level'] }}/10</b><small>{{ v['mood'] }} · Sleep {{ v['sleep_hours'] }} h · Heart rate {{ v['heart_rate'] }} bpm · BP {{ v['systolic_bp'] }}/{{ v['diastolic_bp'] }}</small></div><a href="{{ url_for('person_report') }}">Open report →</a></div>{% else %}<div class="empty-card">No health readings yet. Add your first reading when you are ready.</div>{% endfor %}
+</div>
+<div class="section-title" id="eeg-upload"><h2>Optional EEG CSV analysis</h2><span class="subtle-text">For demonstration only</span></div>
+<div class="upload-card upload-row"><div><div class="upload-icon">〰</div><h2>Analyze a signal file</h2><p>Upload a CSV with numeric signal values to view a waveform summary and basic statistics.</p><small class="subtle-text">This rule-based estimate is not a validated EEG interpretation or a mood diagnosis.</small></div><form action="{{ url_for('analyze') }}" method="POST" enctype="multipart/form-data"><input type="file" name="eeg_file" accept=".csv" required><button class="btn" type="submit">Upload &amp; analyze →</button></form></div>
+<div class="section-title"><h2>Recent mood check-ins</h2><a href="{{ url_for('mood_checkin') }}">New check-in →</a></div>
+<div class="recent-list">{% for m in moods %}<div class="recent-item"><div><b>{{ m['mood'] }}</b><small>{{ m['entry_time'] }}</small></div><span class="pill">Personal reflection</span></div>{% else %}<div class="empty-card">Your mood check-ins will appear here after you add one.</div>{% endfor %}</div>
+<div class="section-title"><h2>Recent EEG analyses</h2><a href="{{ url_for('history') }}">View history →</a></div>
+<div class="recent-list">{% for row in latest %}<div class="recent-item"><div><b>{{ row['filename'] }}</b><small>{{ row['analysis_time'] }}</small></div><span class="pill">{{ row['state'] }}</span><strong>{{ '%.1f'|format(row['confidence']*100) }}%</strong></div>{% else %}<div class="empty-card">No EEG analyses yet. Upload a CSV file above to get started.</div>{% endfor %}</div>
+{% endblock %}
